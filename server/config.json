@@ -1,0 +1,16 @@
+{
+  "port": 3000,
+  "listenOnNetwork": true,
+  "timeZone": "W. Central Africa Standard Time",
+  "adminSessionHours": 12,
+  "driverSessionDays": 30,
+  "smtp": {
+    "host": "",
+    "port": 587,
+    "enableSsl": true,
+    "user": "",
+    "password": "",
+    "from": "",
+    "fromName": "SPIN KN Fleet Management"
+  }
+}

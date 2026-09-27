@@ -1,0 +1,5 @@
+# Live database, uploads and backups (contain personal data and password hashes)
+data/
+
+# Original prototype kept locally for reference (contains old QR tokens and demo passwords)
+legacy/
