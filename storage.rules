@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// uploads/drivers/{uid}/... : odometer and receipt photos taken by drivers.
+// uploads/staff/...         : request documents, written only by functions.
+// uploads/office/...        : files attached by the admin.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function ready() { return request.auth != null && request.auth.token.mustChangePassword != true; }
+    function role() { return request.auth.token.role; }
+    function isOffice() { return ready() && (role() == 'admin' || role() == 'spc'); }
+    function okFile() {
+      return request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)|application/pdf');
+    }
+
+    match /uploads/drivers/{uid}/{file} {
+      allow read: if isOffice() || (ready() && request.auth.uid == uid);
+      allow create: if ready() && role() == 'driver' && request.auth.uid == uid && okFile();
+      allow update, delete: if false;
+    }
+
+    match /uploads/office/{file} {
+      allow read: if isOffice();
+      allow create: if ready() && role() == 'admin' && okFile();
+      allow update, delete: if false;
+    }
+
+    match /uploads/staff/{staffId}/{file} {
+      allow read: if isOffice();
+      allow write: if false;
+    }
+
+    match /{all=**} {
+      allow read, write: if false;
+    }
+  }
+}

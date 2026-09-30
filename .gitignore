@@ -3,3 +3,14 @@ data/
 
 # Original prototype kept locally for reference (contains old QR tokens and demo passwords)
 legacy/
+
+# Firebase rebuild
+node_modules/
+functions/lib/
+web/dist/
+web/dev-dist/
+.firebase/
+*-debug.log
+# Service-account keys are full admin credentials - never commit them
+*service-account*.json
+*firebase-adminsdk*.json
