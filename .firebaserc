@@ -1,5 +1,13 @@
 {
   "projects": {
     "default": "spin-kn-fleet"
+  },
+  "targets": {},
+  "etags": {
+    "spin-kn-fleet": {
+      "extensionInstances": {
+        "firestore-send-email": "d1d613b6dd253780bbff2759e4e1fac6dcbdfbf985087b70626d828b5c08852d"
+      }
+    }
   }
 }
