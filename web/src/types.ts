@@ -120,17 +120,47 @@ export interface Task {
   requester?: { name: string; phone: string; passengers: number; returnTs: string; ref: string } | null;
 }
 
-export interface Stop { id: string; startTs: string; endTs?: string | null; note?: string | null }
+export interface Stop { id: string; startTs: string; endTs?: string | null; note?: string | null; lat?: number | null; lng?: number | null }
 
 export interface Trip {
   driverId: string;
   vehicleId: string;
   taskId?: string | null;
+  requestId?: string | null;
   status: 'inTransit' | 'completed';
   paused: boolean;
   startTs: string;
+  startLat?: number | null;
+  startLng?: number | null;
   startOdo?: number | null;
+  startPhoto?: string | null;
   endTs?: string | null;
+  endLat?: number | null;
+  endLng?: number | null;
   endOdo?: number | null;
+  endPhoto?: string | null;
+  endedBy?: string | null;
+  notes?: string | null;
   stops: Stop[];
+}
+
+export interface Fuel {
+  driverId?: string | null;
+  vehicleId: string;
+  ts: string;
+  litres: number;
+  cost: number;
+  odometer?: number | null;
+  station?: string | null;
+  receipt?: string | null;
+  enteredBy: string;
+}
+
+export interface Maintenance {
+  vehicleId: string;
+  ts: string;
+  odometer?: number | null;
+  cost?: number | null;
+  notes?: string | null;
+  by: string;
 }

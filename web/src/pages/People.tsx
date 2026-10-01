@@ -5,7 +5,7 @@ import { db, call } from '../firebase';
 import { useCollection, useSettings, WithId } from '../data';
 import { printCards, qrLink, qrSvg, CardStaff } from '../print';
 import { Staff } from '../types';
-import { Alert, Badge, Button, Card, cx, Field, inputCls, Modal, SearchInput, Spinner, useAction } from '../ui';
+import { Alert, Badge, Button, Card, compactInputCls, Field, inputCls, Modal, SearchInput, Spinner, useAction } from '../ui';
 
 export function StaffPage() {
   const staff = useCollection<Staff>(collection(db, 'staff'), 'staff');
@@ -37,7 +37,7 @@ export function StaffPage() {
       <p className="text-sm text-slate-600">Each staff member's QR card lets them request a vehicle without an account. Cards link to <b>{(settings.publicBaseUrl || location.origin).replace(/^https?:\/\//, '')}</b>.</p>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          <select className={cx(inputCls, 'w-auto')} value={unit} onChange={e => setUnit(e.target.value)}>
+          <select className={compactInputCls} value={unit} onChange={e => setUnit(e.target.value)}>
             <option value="">All units</option>
             {units.map(u => <option key={u}>{u}</option>)}
           </select>

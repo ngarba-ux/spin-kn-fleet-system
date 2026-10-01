@@ -1,7 +1,7 @@
 // Live Firestore data hooks and the driver's offline action queue.
 import { useEffect, useState } from 'react';
 import { collection, doc, DocumentData, onSnapshot, Query, query, setDoc, where } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { auth, db, storage } from './firebase';
 import { DEFAULT_SETTINGS, Settings } from './types';
 
@@ -100,6 +100,19 @@ export async function uploadDriverPhoto(file: Blob): Promise<string> {
   const path = `uploads/drivers/${uid}/${randomId()}.jpg`;
   await uploadBytes(storageRef(storage, path), file, { contentType: 'image/jpeg' });
   return path;
+}
+
+// Opens an uploaded file (receipt, odometer photo, document) in a new tab.
+// Storage rules decide who may read it.
+export async function openUpload(path: string) {
+  const tab = window.open('', '_blank');
+  try {
+    const url = await getDownloadURL(storageRef(storage, path));
+    if (tab) tab.location.href = url; else location.href = url;
+  } catch (e) {
+    tab?.close();
+    alert('The file could not be opened: ' + (e as Error).message);
+  }
 }
 
 // Shrinks a camera photo so it uploads quickly on mobile data.

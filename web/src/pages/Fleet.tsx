@@ -6,7 +6,7 @@ import { db, call } from '../firebase';
 import { useCollection, useSettings, WithId } from '../data';
 import { Driver, Settings, UserAccount, Vehicle } from '../types';
 import {
-  Alert, Badge, Button, Card, cx, ExpiryBadge, expiryState, Field, fmtDate, fmtDT, inputCls, Modal, num, SearchInput, Spinner,
+  Alert, Badge, Button, Card, compactInputCls, cx, ExpiryBadge, expiryState, Field, fmtDate, fmtDT, inputCls, Modal, num, SearchInput, Spinner,
   TempPasswordModal, useAction,
 } from '../ui';
 
@@ -98,7 +98,7 @@ function ConditionSelect({ v }: { v: WithId<Vehicle> }) {
   const { busy, error, run } = useAction();
   return (
     <span className="flex items-center gap-2">
-      <select className={cx(inputCls, 'w-auto py-2')} value={v.condition} disabled={busy}
+      <select className={cx(compactInputCls, 'py-2')} value={v.condition} disabled={busy}
         onChange={e => { const condition = e.target.value; run(() => call('vehicleCondition', { id: v.id, condition })); }}>
         <option value="ok">In service</option>
         <option value="maintenance">Under maintenance</option>

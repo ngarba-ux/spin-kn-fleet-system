@@ -9,6 +9,7 @@ import { Driver, Task, Trip, TripRequest, Vehicle } from '../types';
 import { Alert, Button, Card, cx, Field, fmtDT, inputCls, Logo, Spinner, StatusBadge, useAction } from '../ui';
 import { DriversPage, VehiclesPage } from './Fleet';
 import { StaffPage } from './People';
+import { FuelPage, TasksPage, TripsPage } from './Ops';
 
 const NAV: Record<'admin' | 'spc', { id: string; label: string }[]> = {
   admin: [
@@ -20,7 +21,8 @@ const NAV: Record<'admin' | 'spc', { id: string; label: string }[]> = {
   ],
   spc: [
     { id: 'requests', label: 'Trip requests' }, { id: 'dashboard', label: 'Dashboard' }, { id: 'vehicles', label: 'Vehicles' },
-    { id: 'drivers', label: 'Drivers' }, { id: 'trips', label: 'Trips' }, { id: 'reports', label: 'Reports' }, { id: 'activity', label: 'Activity log' },
+    { id: 'drivers', label: 'Drivers' }, { id: 'trips', label: 'Trips' }, { id: 'fuel', label: 'Fuel & service' },
+    { id: 'reports', label: 'Reports' }, { id: 'activity', label: 'Activity log' },
   ],
 };
 
@@ -61,7 +63,10 @@ export function OfficeApp({ page, id }: { page: string; id: string | null }) {
         {current.id === 'vehicles' && <VehiclesPage canEdit={role === 'admin'} />}
         {current.id === 'drivers' && <DriversPage canEdit={role === 'admin'} />}
         {current.id === 'staff' && role === 'admin' && <StaffPage />}
-        {!['dashboard', 'requests', 'vehicles', 'drivers', 'staff'].includes(current.id) && (
+        {current.id === 'trips' && <TripsPage isAdmin={role === 'admin'} selectedId={id} />}
+        {current.id === 'tasks' && role === 'admin' && <TasksPage />}
+        {current.id === 'fuel' && <FuelPage isAdmin={role === 'admin'} />}
+        {!['dashboard', 'requests', 'vehicles', 'drivers', 'staff', 'trips', 'tasks', 'fuel'].includes(current.id) && (
           <Card><p className="text-sm text-slate-600">This page is being moved to the new system. Its server functions are ready; the screen comes in the next phase.</p></Card>
         )}
       </main>

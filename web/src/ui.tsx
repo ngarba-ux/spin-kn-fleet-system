@@ -48,7 +48,10 @@ export function Field({ label, children, hint }: { label: string; children: Reac
   );
 }
 
-export const inputCls = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20';
+const fieldCls = 'rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20';
+export const inputCls = 'w-full ' + fieldCls;
+// For filters and inline selects that should size to their content.
+export const compactInputCls = 'w-auto ' + fieldCls;
 
 export function Alert({ tone = 'error', children }: { tone?: 'error' | 'info' | 'warn' | 'success'; children: ReactNode }) {
   const t = { error: 'bg-red-50 text-red-800 ring-red-200', info: 'bg-sky-50 text-sky-800 ring-sky-200', warn: 'bg-amber-50 text-amber-900 ring-amber-200', success: 'bg-emerald-50 text-emerald-800 ring-emerald-200' }[tone];
@@ -163,7 +166,54 @@ export function ExpiryBadge({ label, date, warnDays }: { label: string; date?: s
   return <Badge tone={s === 'expired' ? 'red' : 'amber'}>{label} {s === 'expired' ? 'expired' : 'due'} {fmtDate(date)}</Badge>;
 }
 
-export const num = (n?: number | null) => (n == null ? '-' : Math.round(n).toLocaleString('en-GB'));
+export const num = (n?: number | null, digits = 0) =>
+  n == null ? '-' : n.toLocaleString('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+export const money = (n?: number | null) => (n == null ? '-' : '₦' + Math.round(n).toLocaleString('en-GB'));
+
+export function duration(from?: string | null, to?: string | null): string {
+  if (!from) return '-';
+  const mins = Math.max(0, Math.round(((to ? Date.parse(to) : Date.now()) - Date.parse(from)) / 60000));
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h ? `${h} h ${m} min` : `${m} min`;
+}
+
+// <input type="datetime-local"> <-> ISO, in the browser's local time.
+export function toLocalInput(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+export const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : '');
+
+export function MapLink({ lat, lng }: { lat?: number | null; lng?: number | null }) {
+  if (lat == null || lng == null) return <span className="text-slate-400">—</span>;
+  return <a className="text-emerald-800 underline" href={`https://www.google.com/maps?q=${lat},${lng}`} target="_blank" rel="noopener noreferrer">{lat.toFixed(4)}, {lng.toFixed(4)}</a>;
+}
+
+export function Tabs<T extends string>({ value, onChange, items }: { value: T; onChange: (v: T) => void; items: { value: T; label: string; count?: number }[] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map(i => (
+        <button key={i.value} onClick={() => onChange(i.value)}
+          className={cx('rounded-full px-3 py-1 text-sm', value === i.value ? 'bg-emerald-800 text-white' : 'bg-white ring-1 ring-slate-300')}>
+          {i.label}{i.count != null ? ` (${i.count})` : ''}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: string }) {
+  return (
+    <Card>
+      <div className="text-2xl font-bold text-emerald-900">{value}</div>
+      <div className="text-sm text-slate-600">{label}</div>
+      {sub && <div className="text-xs text-slate-500">{sub}</div>}
+    </Card>
+  );
+}
 
 export function SearchInput({ value, onChange, placeholder = 'Search…' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return <input className={cx(inputCls, 'sm:max-w-xs')} type="search" placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} />;
