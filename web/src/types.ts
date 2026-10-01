@@ -35,22 +35,74 @@ export interface Driver {
   email: string;
   driverNo?: string | null;
   phone?: string | null;
+  licenceNo?: string | null;
   licenceExpiry?: string | null;
-  contract: string;
+  contract: 'active' | 'expired' | 'terminated';
   vehicleId?: string | null;
 }
 
 export interface Vehicle {
+  assetId?: string | null;
   reg: string;
   model: string;
   colour?: string | null;
+  engineNo?: string | null;
+  chassisNo?: string | null;
   condition: 'ok' | 'maintenance' | 'outOfService';
+  initialOdo?: number | null;
+  lastServiceOdo?: number | null;
+  lastServiceDate?: string | null;
+  serviceIntervalKm?: number | null;
   lastOdo?: number | null;
   activeTripId?: string | null;
   driverId?: string | null;
   insuranceExpiry?: string | null;
   roadworthinessExpiry?: string | null;
+  notes?: string | null;
 }
+
+export interface UserAccount {
+  name: string;
+  email: string;
+  role: 'admin' | 'spc' | 'driver';
+  status: 'active' | 'inactive';
+  mustChangePassword: boolean;
+  createdTs: string;
+  lastLoginTs?: string | null;
+}
+
+export interface Staff {
+  staffNo: string;
+  employeeNo?: string | null;
+  fullName: string;
+  unitCode?: string | null;
+  unit?: string | null;
+  designation?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  qrStatus: 'active' | 'revoked';
+  status: 'active' | 'inactive';
+}
+
+export interface Settings {
+  orgName: string;
+  publicBaseUrl: string;
+  serviceIntervalKm: number;
+  expiryWarnDays: number;
+  defaultOrigin: string;
+  components: string[];
+  vehicleTypes: string[];
+}
+
+export const DEFAULT_SETTINGS: Settings = {
+  orgName: 'SPIN Kano - Logistics & Transport Office',
+  publicBaseUrl: '',
+  serviceIntervalKm: 5000,
+  expiryWarnDays: 30,
+  defaultOrigin: 'SPIN Project Office, Kano',
+  components: ['Dam & Power Infrastructure', 'Irrigation & Drainage', 'Agricultural Services & Livelihoods', 'Institutional Strengthening & Project Management'],
+  vehicleTypes: ['Toyota Hilux', 'Long Nose Bus (14 Seater)', 'Any available vehicle'],
+};
 
 export interface Task {
   driverId: string;

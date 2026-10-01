@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { collection, doc, DocumentData, onSnapshot, Query, query, setDoc, where } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes } from 'firebase/storage';
 import { auth, db, storage } from './firebase';
+import { DEFAULT_SETTINGS, Settings } from './types';
 
 export type WithId<T> = T & { id: string };
 
@@ -26,6 +27,12 @@ export function useDocument<T = DocumentData>(path: string | null) {
     return onSnapshot(doc(db, path), snap => setData(snap.exists() ? { id: snap.id, ...(snap.data() as T) } : null));
   }, [path]);
   return data;
+}
+
+// App settings with defaults for anything not saved yet.
+export function useSettings(): Settings {
+  const s = useDocument<Partial<Settings>>('settings/app');
+  return { ...DEFAULT_SETTINGS, ...(s ?? {}) } as Settings;
 }
 
 export function useOnline() {

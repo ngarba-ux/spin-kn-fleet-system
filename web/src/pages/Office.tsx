@@ -7,6 +7,8 @@ import { Role, signOutNow, useAuth } from '../auth';
 import { useCollection, useOnline, WithId } from '../data';
 import { Driver, Task, Trip, TripRequest, Vehicle } from '../types';
 import { Alert, Button, Card, cx, Field, fmtDT, inputCls, Logo, Spinner, StatusBadge, useAction } from '../ui';
+import { DriversPage, VehiclesPage } from './Fleet';
+import { StaffPage } from './People';
 
 const NAV: Record<'admin' | 'spc', { id: string; label: string }[]> = {
   admin: [
@@ -56,7 +58,10 @@ export function OfficeApp({ page, id }: { page: string; id: string | null }) {
         {!online && <div className="mb-4"><Alert tone="warn">You are offline. Showing saved data; changes need a connection.</Alert></div>}
         {current.id === 'dashboard' && <Dashboard />}
         {current.id === 'requests' && <Requests role={role} selectedId={id} />}
-        {!['dashboard', 'requests'].includes(current.id) && (
+        {current.id === 'vehicles' && <VehiclesPage canEdit={role === 'admin'} />}
+        {current.id === 'drivers' && <DriversPage canEdit={role === 'admin'} />}
+        {current.id === 'staff' && role === 'admin' && <StaffPage />}
+        {!['dashboard', 'requests', 'vehicles', 'drivers', 'staff'].includes(current.id) && (
           <Card><p className="text-sm text-slate-600">This page is being moved to the new system. Its server functions are ready; the screen comes in the next phase.</p></Card>
         )}
       </main>

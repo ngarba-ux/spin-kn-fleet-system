@@ -102,3 +102,69 @@ export function Logo({ small }: { small?: boolean }) {
     </div>
   );
 }
+
+// ---------------------------------------------------------------- dialogs
+
+export function Modal({ title, sub, onClose, children, footer, wide }: {
+  title: ReactNode; sub?: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center sm:p-4" onClick={onClose}>
+      <div className={cx('max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl', wide ? 'sm:max-w-2xl' : 'sm:max-w-md')}
+        onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+          <div><h2 className="text-base font-semibold">{title}</h2>{sub && <div className="text-sm text-slate-500">{sub}</div>}</div>
+          <button className="rounded-lg px-2 text-xl leading-none text-slate-500 hover:bg-slate-100" onClick={onClose} aria-label="Close">×</button>
+        </div>
+        <div className="space-y-4 px-5 py-4">{children}</div>
+        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 px-5 py-3">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// Shown once after creating an account or resetting a password.
+export function TempPasswordModal({ info, onClose }: { info: { email: string; tempPassword: string; name?: string }; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const text = `SPIN-KN Fleet sign-in\nAddress: ${location.origin}\nEmail: ${info.email}\nTemporary password: ${info.tempPassword}\nYou will be asked to choose your own password at first sign-in.`;
+  return (
+    <Modal title="Account ready" sub={info.name} onClose={onClose}
+      footer={<>
+        <Button variant="secondary" onClick={async () => { await navigator.clipboard.writeText(text).catch(() => undefined); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy details'}</Button>
+        <Button onClick={onClose}>Done</Button>
+      </>}>
+      <Alert tone="warn">Write this down or copy it now. The temporary password is not shown again.</Alert>
+      <dl className="grid grid-cols-[9.5rem_1fr] gap-y-2 text-sm">
+        <dt className="text-slate-500">Email</dt><dd className="font-medium">{info.email}</dd>
+        <dt className="text-slate-500">Temporary password</dt><dd className="font-mono text-base font-semibold tracking-wide">{info.tempPassword}</dd>
+      </dl>
+      <p className="text-sm text-slate-600">They must choose their own password the first time they sign in.</p>
+    </Modal>
+  );
+}
+
+type Tone = 'slate' | 'green' | 'amber' | 'red' | 'blue';
+
+export function Badge({ tone = 'slate', children }: { tone?: Tone; children: ReactNode }) {
+  const t: Record<Tone, string> = { slate: 'bg-slate-100 text-slate-700', green: 'bg-emerald-100 text-emerald-800', amber: 'bg-amber-100 text-amber-900', red: 'bg-red-100 text-red-800', blue: 'bg-sky-100 text-sky-800' };
+  return <span className={cx('inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold', t[tone])}>{children}</span>;
+}
+
+// For a yyyy-MM-dd date: expired, due within warnDays, or fine.
+export function expiryState(date: string | null | undefined, warnDays = 30): 'expired' | 'soon' | 'ok' | null {
+  if (!date) return null;
+  const days = (Date.parse(date + 'T23:59:59') - Date.now()) / 86400_000;
+  return days < 0 ? 'expired' : days <= warnDays ? 'soon' : 'ok';
+}
+
+export function ExpiryBadge({ label, date, warnDays }: { label: string; date?: string | null; warnDays?: number }) {
+  const s = expiryState(date, warnDays);
+  if (!s || s === 'ok') return null;
+  return <Badge tone={s === 'expired' ? 'red' : 'amber'}>{label} {s === 'expired' ? 'expired' : 'due'} {fmtDate(date)}</Badge>;
+}
+
+export const num = (n?: number | null) => (n == null ? '-' : Math.round(n).toLocaleString('en-GB'));
+
+export function SearchInput({ value, onChange, placeholder = 'Search…' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return <input className={cx(inputCls, 'sm:max-w-xs')} type="search" placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} />;
+}

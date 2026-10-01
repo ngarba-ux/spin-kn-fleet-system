@@ -3,3 +3,25 @@
 :root {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+
+/* ---------- printing staff QR cards (same layout as the original app) ---------- */
+#print-root { display: none; }
+@media print {
+  @page { margin: 10mm; }
+  body.print-mode > *:not(#print-root) { display: none !important; }
+  body.print-mode #print-root { display: block; }
+}
+.qr-sheet { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.qr-card { border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; break-inside: avoid; }
+.qr-card-hd { display: flex; gap: 8px; align-items: center; background: #065f46; color: #fff; padding: 8px 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.qr-card-hd img { width: 30px; height: 30px; border-radius: 6px; background: #fff; padding: 2px; }
+.qr-card-hd .t1 { font-weight: 700; font-size: 12px; }
+.qr-card-hd .t2 { font-size: 9px; opacity: .85; }
+.qr-card-bd { display: flex; gap: 10px; padding: 10px; }
+.qr-card-code { width: 122px; flex: none; text-align: center; }
+.qr-card-code svg { width: 120px; height: 120px; display: block; }
+.qr-card-code .tok { font-family: ui-monospace, monospace; font-size: 7.5px; color: #475569; word-break: break-all; }
+.qr-card-meta { font-size: 10px; color: #334155; display: flex; flex-direction: column; gap: 1px; }
+.qr-card-meta .nm { font-weight: 700; font-size: 12px; color: #0f172a; margin-bottom: 2px; }
+.qr-card-ft { font-size: 8px; color: #64748b; font-style: italic; padding: 0 10px 8px; }
+.qr-preview svg { width: 100%; height: auto; display: block; }
