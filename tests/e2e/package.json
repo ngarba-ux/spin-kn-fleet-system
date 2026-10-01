@@ -1,0 +1,13 @@
+{
+  "name": "spin-kn-fleet-e2e",
+  "private": true,
+  "description": "End-to-end tests against the live Firebase project (see tests/README.md)",
+  "scripts": {
+    "api": "node api-workflow.cjs && node api-fleet.cjs",
+    "ui": "node ui-main-flow.cjs && node ui-operations.cjs && node ui-super-user.cjs",
+    "all": "npm run api && npm run ui"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}

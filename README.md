@@ -1,85 +1,53 @@
 # SPIN-KN Fleet
 
-Fleet management for SPIN Kano (Sustainable Power and Irrigation for Nigeria, Kano State):
+Fleet management for **SPIN Kano** (Sustainable Power and Irrigation for Nigeria, Kano State).
 
-- **Staff** request a vehicle by scanning the QR code on their staff ID card. No account is needed.
-- **Logistics & Transport** (admin) reviews each request and forwards it to the **SPC** for a decision.
-- A **driver** is then dispatched. Drivers log trips, stops, fuel and odometer readings from their phones, even with no signal.
+- **Staff** request a vehicle by scanning the QR code on their staff ID card. They don't need an account.
+- The **Logistics & Transport office** (admin) reviews each request and forwards it to the **State Project Coordinator (SPC)** for a decision.
+- A **driver** and vehicle are assigned. The driver records the trip, stops, fuel and odometer readings on their phone, with or without signal.
 
-The app runs on any Windows 10/11 PC with **nothing to install**. It uses the Windows PowerShell and .NET that come with Windows.
+**Live app:** <https://spin-kn-fleet.web.app> (Firebase project `spin-kn-fleet`)
 
-## Start it
+## What's in this repository
 
-1. Double-click **`start-server.bat`** and keep the window open.
-2. On the same PC, open <http://localhost:3000>.
+The repository holds two versions of the app. **New work goes into the Firebase app.**
 
-The first start creates the database and prints the starter accounts. Each account must choose a new password at first sign-in.
-
-| Role | Email | First password |
+| Version | Folders | Status |
 |---|---|---|
-| Admin (Logistics & Transport) | yasjibril@spinkano.com.ng | admin123 |
-| SPC | ainuraddeen@spinkano.com.ng | spc123 |
-| Drivers (demo) | musa@ / aisha@ / fatima@ / ibrahim@spin-kn.ng | driver123 |
+| **Firebase app** (current) | `functions/`, `web/`, `firestore.rules`, `storage.rules`, `extensions/`, `scripts/`, `tests/` | Live; being built out |
+| Original Windows app (legacy) | `server/`, `public/`, `start-server.*`, `enable-network-access.bat` | Kept for reference until switchover. See [docs/LEGACY-WINDOWS-APP.md](docs/LEGACY-WINDOWS-APP.md) |
 
-The demo drivers, vehicles and trips can be deleted in one click: **Settings → Remove demo records**. The 19 staff records are the real staff directory, so they are kept.
+## Quick start for developers
 
-## Let phones connect (office network)
+You need:
+- Node.js 22 or newer and Git
+- The Firebase CLI: `npm i -g firebase-tools`
+- Access to the GitHub repository and the Firebase project. See [CONTRIBUTING.md](CONTRIBUTING.md#1-get-access).
 
-1. Right-click **`enable-network-access.bat`** and run it once. It asks for Administrator permission. It reserves port 3000 and opens the firewall on private networks only.
-2. Restart `start-server.bat`. The window now shows the network address, for example `http://192.168.1.10:3000`.
-3. Open that address on any device, then go to **Settings → Network address → Use …**. QR cards and email links use this address.
-4. Print the cards from **Staff & QR → Print all QR cards**.
-
-Give the server PC a fixed (reserved) IP address on your router. If the address changes, printed cards stop working.
-
-## Email
-
-Notifications (request received, approved, declined, rescheduled, driver assigned, and so on) are always recorded under **Email notifications**. To actually send them:
-
-1. Fill in `smtp` in `server/config.json`: `host`, `port`, `enableSsl`, `user`, `password`, `from`.
-2. Restart the server.
-
-Emails recorded while sending was off can be re-sent from the Email notifications page.
-
-## Data & backups
-
-- **Database:** everything is stored in `data/db.json`.
-- **Uploaded files:** receipts, odometer photos and supporting documents are in `data/uploads/`.
-- **Automatic backup:** a copy is saved daily to `data/backups/`; the last 30 are kept.
-- **Manual backup:** Settings → **Download full backup**.
-- **Restore:** stop the server, replace `data/db.json` with a backup, then start it again.
-
-## Good to know
-
-- **GPS and the camera on phones need HTTPS.** Browsers only allow location and in-app camera access over `https://` or on `localhost`. On plain `http://` over the network:
-  - Trips are still recorded, just without coordinates.
-  - The odometer and receipt photo buttons still work, because they use the phone's own camera app.
-  - For GPS, serve the app over HTTPS, for example behind a reverse proxy with a certificate.
-- **Offline driving:** once a driver has the app open, anything they record without signal is saved on the phone and uploads automatically when they reconnect. Nothing is recorded twice.
-- **QR cards are credentials.** Anyone holding a card can request trips in that person's name. If a card is lost, revoke or regenerate it under Staff & QR. Each installation generates its own tokens on first start, so cards printed from the original prototype do not work. Print new cards from Staff & QR.
-
-## Project layout
-
-```
-start-server.bat / .ps1     launcher (compiles server/*.cs in memory)
-enable-network-access.bat   one-time network setup (admin)
-server/                     C# server: models, workflow rules, auth, email, HTTP
-  config.json               port, time zone, session length, SMTP
-public/                     browser app (Preact + htm, no build step)
-  js/views/                 screens: landing, staff, status, driver, office pages
-  vendor/                   Preact/htm and the QR generator, stored locally for offline use
-data/                       created at first start (database, uploads, backups)
-legacy/                     the original single-file prototype, for reference
+```bash
+git clone https://github.com/ngarba-ux/spin-kn-fleet-system.git
+cd spin-kn-fleet-system
+git checkout firebase-rebuild          # until it is merged into main
+npm --prefix functions install
+npm --prefix web install
+firebase login
+npm --prefix web run dev               # http://localhost:5173, using the live Firebase project
 ```
 
-## Security summary
+## Documentation
 
-- **Passwords:** salted PBKDF2-SHA256 hashes (120,000 iterations). Every account must choose its own password at first sign-in.
-- **Brute-force protection:** sign-in locks for 15 minutes after 5 wrong passwords per account, or 20 per IP address.
-- **Sessions:** HttpOnly cookies. The office signs out after 12 hours; drivers stay signed in for 30 days.
-- **Server-side checks:** permissions and workflow rules are all enforced on the server. For example, the SPC cannot edit the fleet, and drivers can only touch their own trips.
-- **Web protections:**
-  - CSRF header check on every change.
-  - Content-Security-Policy and path-traversal protection.
-  - Uploads are checked by type and size.
-- **Failure safety:** a failed request never leaves half-applied changes, because the server rolls back to the last saved state.
+| Document | Read it to… |
+|---|---|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | get access, follow the branch and pull-request workflow, add a feature end to end, test and deploy |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | understand the data model, the request workflow, the roles and permissions, and the offline driver queue |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | set up Firebase, deploy, import data, manage email and secrets, and handle backups |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | see what is finished, what to build next, and known issues |
+| [tests/README.md](tests/README.md) | run the end-to-end tests against the live project |
+| [CLAUDE.md](CLAUDE.md) | brief Claude Code (or another AI assistant) working on this repository |
+
+## Tech stack
+
+- **Web:** React 19 + TypeScript + Vite, with Tailwind CSS v4. It's an installable app (PWA) that works offline.
+- **Backend:** Cloud Functions for Firebase (2nd gen, Node 22, region `europe-west1`).
+- **Data:** Firestore, Firebase Authentication (email and password, with roles stored on each account) and Cloud Storage.
+- **Email:** the Firebase **Trigger Email** extension, sending as `fleet@spinkano.com.ng` through the QServers cPanel mail server.
