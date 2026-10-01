@@ -60,7 +60,8 @@ npm --prefix tests/e2e run api|ui                # live e2e tests (needs SPIN_SE
 
 ## Git and collaboration
 
-- Repo: `ngarba-ux/spin-kn-fleet-system`. Collaborators work on **feature branches and open pull requests**; never push to `main` directly.
+- Repo: `ngarba-ux/spin-kn-fleet-system`, owned by **Nura Garba**. Ahmad Isah (`ahmanur`) is a collaborator, and owns the Firebase project `spin-kn-fleet`.
+- Collaborators work on **feature branches and open pull requests**; never push to `main` directly.
 - The Firebase rebuild lives on `firebase-rebuild` until it's merged.
 - Follow [CONTRIBUTING.md](CONTRIBUTING.md), and use the PR template in `.github/`.
 - **Never commit** service-account keys, `data/` (exports, temporary passwords) or build output.

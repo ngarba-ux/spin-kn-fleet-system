@@ -4,13 +4,18 @@ This guide is for developers joining the project. It covers getting access, sett
 
 ## 1. Get access
 
-Ask the project owner for all three:
+The code and the running app are owned by different people, so ask each one:
 
-| Access | How the owner grants it | Needed for |
+| Access | Who grants it, and how | Needed for |
 |---|---|---|
-| **GitHub** collaborator on `ngarba-ux/spin-kn-fleet-system` | GitHub → repo → Settings → Collaborators | Pull and push branches, open pull requests |
-| **Firebase** project member on `spin-kn-fleet` | Firebase console → Project settings → Users and permissions → Add member. Use **Editor** to deploy, **Viewer** to look only | `firebase deploy`, logs, console |
-| **An app account** | A super user or admin creates one (Drivers page for drivers; accounts for office users) | Signing in to test |
+| **GitHub** collaborator on `ngarba-ux/spin-kn-fleet-system` | **Nura Garba** (`ngarba-ux`), the repository owner: GitHub → repo → Settings → Collaborators | Pull and push branches, open pull requests |
+| **Firebase** project member on `spin-kn-fleet` | **Ahmad Isah** (ahmanur@gmail.com), the Firebase project owner: Firebase console → Project settings → Users and permissions → Add member. Use **Editor** to deploy, **Viewer** to look only | `firebase deploy`, logs, console |
+| **An app account** | A super user or admin (Drivers page for drivers; accounts for office users) | Signing in to test |
+
+| Person | Role on the project |
+|---|---|
+| **Nura Garba** (`ngarba-ux`) | Owns the GitHub repository. Reviews and merges pull requests into `main` |
+| **Ahmad Isah** (`ahmanur`, ahmanur@gmail.com) | Collaborator on GitHub. Owns the Firebase project `spin-kn-fleet` (billing, deploys, secrets). Super user in the app |
 
 The **service-account key** used by the import script and the tests gives full admin access to the project.
 - Each developer should generate their own from Firebase console → Project settings → Service accounts → Generate new private key.
@@ -52,7 +57,7 @@ npm --prefix web install
   ```bash
   git push -u origin feature/settings-page
   ```
-  Then on GitHub, click **Compare & pull request** and fill in the template. Another collaborator reviews before merging.
+  Then on GitHub, click **Compare & pull request** and fill in the template. Another person reviews before merging; changes to `main` are merged by the repository owner, Nura Garba, unless agreed otherwise.
 - **Stay up to date:** run `git pull --rebase origin main` before you push. Fix any conflicts locally.
 - **Deploy from `main`** after merging (section 6), unless you've agreed to test a branch live.
 

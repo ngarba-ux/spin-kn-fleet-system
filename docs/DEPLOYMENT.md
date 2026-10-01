@@ -5,6 +5,9 @@ Everything about the Firebase project `spin-kn-fleet`: one-time setup, deploying
 - **Console:** <https://console.firebase.google.com/project/spin-kn-fleet>
 - **Region:** `europe-west1` (Belgium) for Firestore, Functions and Storage. It's the closest region with a fast route from Nigeria.
 - **Plan:** Blaze (pay as you go). Set a budget alert under Google Cloud → Billing → Budgets.
+- **Owner:** Ahmad Isah (ahmanur@gmail.com) created the project and holds billing.
+  - The GitHub repository is owned separately, by Nura Garba (`ngarba-ux`).
+  - Add at least one more **Owner** (Project settings → Users and permissions) so the app doesn't depend on one Google account.
 
 ## Current setup
 
