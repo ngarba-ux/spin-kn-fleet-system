@@ -168,11 +168,18 @@ export const requestAction = onCall(async req => {
   const type = p.req('type', 'Action');
   const id = p.req('id', 'Request');
   const isSpc = me.role === 'spc';
+  const isSuper = me.role === 'super';
 
   const adminOnly = ['ack', 'review', 'forward', 'dispatch', 'cancel', 'close'];
   const spcOnly = ['approve', 'reject'];
   if (adminOnly.includes(type) && isSpc) fail('permission-denied', 'Your account is not allowed to do that.');
-  if (spcOnly.includes(type) && !isSpc) fail('permission-denied', 'Your account is not allowed to do that.');
+  if (spcOnly.includes(type) && me.role === 'admin') fail('permission-denied', 'Your account is not allowed to do that.');
+
+  // Two-person check: whoever forwarded a request cannot also decide it.
+  const independent = (r: RequestDoc) => {
+    if (r.forwardedByUid && r.forwardedByUid === me.uid)
+      fail('failed-precondition', 'You forwarded this request, so someone else must approve or decline it.', { code: 'sameApprover' });
+  };
 
   const [s, admins, spcs] = await Promise.all([getSettings(), officeRecipients('admin'), officeRecipients('spc')]);
   const ref = db.doc(`requests/${id}`);
@@ -226,6 +233,7 @@ export const requestAction = onCall(async req => {
         r.proposedDriverId = driverId;
         r.proposedVehicleId = vehicleId;
         r.forwardedByName = me.name;
+        r.forwardedByUid = me.uid;
         transition(r, me.name, 'FORWARDED_TO_SPC', 'FORWARDED_TO_SPC', [remark, driver ? `Proposed driver: ${driver.name}` : null].filter(Boolean).join(' '));
         notifyStaff(tx, s, id, r, 'review');
         notifyOffice(tx, s, spcs, id, r, `Trip request ${r.ref} awaiting your decision`,
@@ -236,6 +244,7 @@ export const requestAction = onCall(async req => {
 
       case 'approve': {
         requireStatus(r, 'FORWARDED_TO_SPC');
+        independent(r);
         const plan = r.proposedDriverId ? await planDispatch(tx, r, r.proposedDriverId, r.proposedVehicleId ?? null) : null;
         applyApproval(tx, s, admins, id, r, me.name, 'SPC_APPROVED', comment, plan);
         log(tx, me, 'Trip request approved', r.ref);
@@ -244,6 +253,7 @@ export const requestAction = onCall(async req => {
 
       case 'reject': {
         requireStatus(r, 'FORWARDED_TO_SPC');
+        independent(r);
         const reason = p.req('comment', 'Reason', 1000);
         transition(r, me.name, 'SPC_REJECTED', 'REJECTED', reason);
         r.spcDecision = 'REJECTED';
@@ -253,7 +263,10 @@ export const requestAction = onCall(async req => {
       }
 
       case 'reschedule': {
-        if (isSpc) requireStatus(r, 'FORWARDED_TO_SPC');
+        // A super user rescheduling a request that awaits the SPC decides it as
+        // the SPC, unless they forwarded it themselves.
+        const asSpc = isSpc || (isSuper && r.status === 'FORWARDED_TO_SPC' && r.forwardedByUid !== me.uid);
+        if (isSpc) { requireStatus(r, 'FORWARDED_TO_SPC'); independent(r); }
         else requireStatus(r, 'SUBMITTED', 'ACKNOWLEDGED', 'UNDER_ADMIN_REVIEW', 'FORWARDED_TO_SPC', 'APPROVED', 'DRIVER_ASSIGNED');
         const dep = reqTs(p.req('departTs', 'New departure'), 'New departure');
         const ret = reqTs(p.req('returnTs', 'New return'), 'New return');
@@ -269,11 +282,11 @@ export const requestAction = onCall(async req => {
         }
         const oldDep = r.departTs, oldRet = r.returnTs;
         r.departTs = dep.toISOString(); r.returnTs = ret.toISOString();
-        const plan = isSpc && r.proposedDriverId ? await planDispatch(tx, r, r.proposedDriverId, r.proposedVehicleId ?? null) : null;
+        const plan = asSpc && r.proposedDriverId ? await planDispatch(tx, r, r.proposedDriverId, r.proposedVehicleId ?? null) : null;
         r.rescheduledFromDepart = oldDep; r.rescheduledFromReturn = oldRet;
         if (taskSnap && task?.status === 'scheduled') tx.update(taskSnap.ref, { scheduledTs: r.departTs, acknowledged: false });
         const note = `${reason} (was ${fmtLocal(oldDep)} - ${fmtLocal(oldRet)})`;
-        if (isSpc) applyApproval(tx, s, admins, id, r, me.name, 'TRIP_RESCHEDULED', note, plan);
+        if (asSpc) applyApproval(tx, s, admins, id, r, me.name, 'TRIP_RESCHEDULED', note, plan);
         else transition(r, me.name, 'TRIP_RESCHEDULED', null, note);
         notifyStaff(tx, s, id, r, 'rescheduled', reason);
         log(tx, me, 'Trip request rescheduled', r.ref);

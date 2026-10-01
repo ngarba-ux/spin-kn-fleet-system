@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { collection, limit, orderBy, query, where } from 'firebase/firestore';
 import { db, call, CallError } from '../firebase';
-import { Role, signOutNow, useAuth } from '../auth';
+import { signOutNow, useAuth } from '../auth';
 import { useCollection, useOnline, WithId } from '../data';
 import { Driver, Task, Trip, TripRequest, Vehicle } from '../types';
 import { Alert, Button, Card, cx, Field, fmtDT, inputCls, Logo, Spinner, StatusBadge, useAction } from '../ui';
@@ -28,17 +28,18 @@ const NAV: Record<'admin' | 'spc', { id: string; label: string }[]> = {
 
 export function OfficeApp({ page, id }: { page: string; id: string | null }) {
   const { session } = useAuth();
-  const role = session!.role as 'admin' | 'spc';
+  const role = session!.role as OfficeRole;
+  const isAdmin = role !== 'spc';
   const online = useOnline();
   const [open, setOpen] = useState(false);
-  const nav = NAV[role];
+  const nav = NAV[role === 'spc' ? 'spc' : 'admin'];
   const current = nav.find(n => n.id === page) ?? nav[0];
 
   return (
     <div className="min-h-dvh lg:flex">
       <aside className={cx('fixed inset-y-0 left-0 z-20 w-64 transform bg-white p-4 shadow-lg ring-1 ring-slate-200 transition lg:static lg:translate-x-0 lg:shadow-none', open ? 'translate-x-0' : '-translate-x-full')}>
         <Logo small />
-        <div className="mt-1 text-xs text-slate-500">{role === 'admin' ? 'Logistics & Transport' : 'State Project Coordinator'}</div>
+        <div className="mt-1 text-xs text-slate-500">{{ admin: 'Logistics & Transport', spc: 'State Project Coordinator', super: 'Super user · Admin + SPC' }[role]}</div>
         <nav className="mt-6 space-y-0.5">
           {nav.map(n => (
             <a key={n.id} href={`#/${n.id}`} onClick={() => setOpen(false)}
@@ -60,12 +61,12 @@ export function OfficeApp({ page, id }: { page: string; id: string | null }) {
         {!online && <div className="mb-4"><Alert tone="warn">You are offline. Showing saved data; changes need a connection.</Alert></div>}
         {current.id === 'dashboard' && <Dashboard />}
         {current.id === 'requests' && <Requests role={role} selectedId={id} />}
-        {current.id === 'vehicles' && <VehiclesPage canEdit={role === 'admin'} />}
-        {current.id === 'drivers' && <DriversPage canEdit={role === 'admin'} />}
-        {current.id === 'staff' && role === 'admin' && <StaffPage />}
-        {current.id === 'trips' && <TripsPage isAdmin={role === 'admin'} selectedId={id} />}
-        {current.id === 'tasks' && role === 'admin' && <TasksPage />}
-        {current.id === 'fuel' && <FuelPage isAdmin={role === 'admin'} />}
+        {current.id === 'vehicles' && <VehiclesPage canEdit={isAdmin} />}
+        {current.id === 'drivers' && <DriversPage canEdit={isAdmin} />}
+        {current.id === 'staff' && isAdmin && <StaffPage />}
+        {current.id === 'trips' && <TripsPage isAdmin={isAdmin} selectedId={id} />}
+        {current.id === 'tasks' && isAdmin && <TasksPage />}
+        {current.id === 'fuel' && <FuelPage isAdmin={isAdmin} />}
         {!['dashboard', 'requests', 'vehicles', 'drivers', 'staff', 'trips', 'tasks', 'fuel'].includes(current.id) && (
           <Card><p className="text-sm text-slate-600">This page is being moved to the new system. Its server functions are ready; the screen comes in the next phase.</p></Card>
         )}
@@ -106,11 +107,15 @@ const FILTERS: Record<string, { label: string; statuses: string[] | null }> = {
   done: { label: 'Finished', statuses: ['TRIP_COMPLETED', 'CLOSED', 'REJECTED', 'CANCELLED'] },
 };
 
-function needsAction(role: Role, r: TripRequest) {
-  return role === 'spc' ? r.status === 'FORWARDED_TO_SPC' : ['SUBMITTED', 'ACKNOWLEDGED', 'UNDER_ADMIN_REVIEW', 'APPROVED', 'TRIP_COMPLETED'].includes(r.status);
+type OfficeRole = 'admin' | 'spc' | 'super';
+
+function needsAction(role: OfficeRole, r: TripRequest) {
+  const admin = ['SUBMITTED', 'ACKNOWLEDGED', 'UNDER_ADMIN_REVIEW', 'APPROVED', 'TRIP_COMPLETED'].includes(r.status);
+  const spc = r.status === 'FORWARDED_TO_SPC';
+  return role === 'spc' ? spc : role === 'admin' ? admin : admin || spc;
 }
 
-function Requests({ role, selectedId }: { role: 'admin' | 'spc'; selectedId: string | null }) {
+function Requests({ role, selectedId }: { role: OfficeRole; selectedId: string | null }) {
   const [filter, setFilter] = useState('action');
   // The 300 most recent requests; older ones come with the reports page.
   const all = useCollection<TripRequest>(query(collection(db, 'requests'), orderBy('createdTs', 'desc'), limit(300)), 'requests');
@@ -152,7 +157,11 @@ function Requests({ role, selectedId }: { role: 'admin' | 'spc'; selectedId: str
   );
 }
 
-function RequestDetail({ role, r }: { role: 'admin' | 'spc'; r: WithId<TripRequest> }) {
+function RequestDetail({ role, r }: { role: OfficeRole; r: WithId<TripRequest> }) {
+  const { session } = useAuth();
+  const asAdmin = role !== 'spc', asSpc = role !== 'admin';
+  // Two-person check: whoever forwarded a request cannot also decide it.
+  const ownForward = !!r.forwardedByUid && r.forwardedByUid === session?.user.uid;
   const drivers = useCollection<Driver>(collection(db, 'drivers'), 'drivers');
   const vehicles = useCollection<Vehicle>(collection(db, 'vehicles'), 'vehicles');
   const task = useCollection<Task>(query(collection(db, 'tasks'), where('requestId', '==', r.id)), 'task-' + r.id);
@@ -197,10 +206,10 @@ function RequestDetail({ role, r }: { role: 'admin' | 'spc'; r: WithId<TripReque
       </dl>
 
       <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
-        {role === 'admin' && is('SUBMITTED') && <Button variant="secondary" busy={busy} onClick={() => act('ack')}>Acknowledge</Button>}
-        {role === 'admin' && is('SUBMITTED', 'ACKNOWLEDGED') && <Button variant="secondary" busy={busy} className="ml-2" onClick={() => act('review')}>Mark under review</Button>}
+        {asAdmin && is('SUBMITTED') && <Button variant="secondary" busy={busy} onClick={() => act('ack')}>Acknowledge</Button>}
+        {asAdmin && is('SUBMITTED', 'ACKNOWLEDGED') && <Button variant="secondary" busy={busy} className="ml-2" onClick={() => act('review')}>Mark under review</Button>}
 
-        {role === 'admin' && is('SUBMITTED', 'ACKNOWLEDGED', 'UNDER_ADMIN_REVIEW') && (
+        {asAdmin && is('SUBMITTED', 'ACKNOWLEDGED', 'UNDER_ADMIN_REVIEW') && (
           <div className="space-y-2 rounded-lg bg-slate-50 p-3">
             <div className="text-sm font-semibold">Forward to SPC</div>
             <Field label="Propose a driver (optional)"><DriverSelect drivers={drivers.data} vehicles={vehicles.data} value={driverId} onChange={setDriverId} /></Field>
@@ -209,14 +218,17 @@ function RequestDetail({ role, r }: { role: 'admin' | 'spc'; r: WithId<TripReque
           </div>
         )}
 
-        {role === 'spc' && is('FORWARDED_TO_SPC') && (
+        {asSpc && is('FORWARDED_TO_SPC') && ownForward && (
+          <Alert tone="info">You forwarded this request, so someone else must approve or decline it.</Alert>
+        )}
+        {asSpc && is('FORWARDED_TO_SPC') && !ownForward && (
           <div className="flex flex-wrap gap-2">
             <Button busy={busy} onClick={() => act('approve')}>Approve</Button>
             <Button variant="danger" busy={busy} onClick={() => act('reject', {}, 'Reason for declining:')}>Decline</Button>
           </div>
         )}
 
-        {role === 'admin' && is('APPROVED', 'DRIVER_ASSIGNED') && (
+        {asAdmin && is('APPROVED', 'DRIVER_ASSIGNED') && (
           <div className="space-y-2 rounded-lg bg-slate-50 p-3">
             <div className="text-sm font-semibold">{is('APPROVED') ? 'Assign vehicle & driver' : 'Change assignment'}</div>
             <DriverSelect drivers={drivers.data} vehicles={vehicles.data} value={driverId} onChange={setDriverId} />
@@ -236,10 +248,10 @@ function RequestDetail({ role, r }: { role: 'admin' | 'spc'; r: WithId<TripReque
         )}
 
         <div className="flex flex-wrap gap-2">
-          {(role === 'admin' ? is('SUBMITTED', 'ACKNOWLEDGED', 'UNDER_ADMIN_REVIEW', 'FORWARDED_TO_SPC', 'APPROVED') : is('FORWARDED_TO_SPC')) &&
+          {(asAdmin ? is('SUBMITTED', 'ACKNOWLEDGED', 'UNDER_ADMIN_REVIEW', 'FORWARDED_TO_SPC', 'APPROVED') : is('FORWARDED_TO_SPC')) &&
             <Button variant="secondary" busy={busy} onClick={() => act('return', {}, 'What should the requester correct?')}>Return for correction</Button>}
-          {role === 'admin' && is('TRIP_COMPLETED') && <Button busy={busy} onClick={() => act('close')}>Close request</Button>}
-          {role === 'admin' && is('SUBMITTED', 'ACKNOWLEDGED', 'UNDER_ADMIN_REVIEW', 'RETURNED_FOR_CORRECTION', 'FORWARDED_TO_SPC', 'APPROVED', 'DRIVER_ASSIGNED') &&
+          {asAdmin && is('TRIP_COMPLETED') && <Button busy={busy} onClick={() => act('close')}>Close request</Button>}
+          {asAdmin && is('SUBMITTED', 'ACKNOWLEDGED', 'UNDER_ADMIN_REVIEW', 'RETURNED_FOR_CORRECTION', 'FORWARDED_TO_SPC', 'APPROVED', 'DRIVER_ASSIGNED') &&
             <Button variant="ghost" busy={busy} onClick={() => act('cancel', {}, 'Reason for cancelling:')}>Cancel request</Button>}
         </div>
         {error && <Alert>{error}</Alert>}

@@ -18,7 +18,8 @@ export const bucket = () => getStorage().bucket();
 export const TIME_ZONE = 'Africa/Lagos';
 export const DEFAULT_BASE_URL = 'https://spin-kn-fleet.web.app';
 
-export type Role = 'admin' | 'spc' | 'driver';
+// 'super' holds both office roles (admin + SPC) in one account.
+export type Role = 'admin' | 'spc' | 'driver' | 'super';
 
 export interface Actor {
   uid: string;
@@ -35,7 +36,8 @@ export function actor(req: CallableRequest, ...roles: Role[]): Actor {
   const a = req.auth;
   if (!a) fail('unauthenticated', 'Please sign in again.');
   const role = a.token.role as Role | undefined;
-  if (!role || !roles.includes(role)) fail('permission-denied', 'Your account is not allowed to do that.');
+  const allowed = !!role && (roles.includes(role) || (role === 'super' && (roles.includes('admin') || roles.includes('spc'))));
+  if (!allowed) fail('permission-denied', 'Your account is not allowed to do that.');
   if (a.token.mustChangePassword) fail('failed-precondition', 'Please set a new password first.');
   return { uid: a.uid, role, name: (a.token.name as string) || (a.token.email as string) || 'User' };
 }

@@ -26,6 +26,8 @@ export interface TripRequest {
   history: HistoryEntry[];
   adminRemark?: string;
   proposedDriverId?: string | null;
+  forwardedByUid?: string | null;
+  forwardedByName?: string | null;
   dispatchDriverId?: string | null;
   dispatchVehicleId?: string | null;
 }
@@ -64,7 +66,7 @@ export interface Vehicle {
 export interface UserAccount {
   name: string;
   email: string;
-  role: 'admin' | 'spc' | 'driver';
+  role: 'admin' | 'spc' | 'driver' | 'super';
   status: 'active' | 'inactive';
   mustChangePassword: boolean;
   createdTs: string;

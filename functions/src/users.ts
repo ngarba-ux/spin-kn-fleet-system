@@ -14,6 +14,11 @@ async function ensureEmailFree(email: string, exceptUid: string | null) {
   }
 }
 
+// Ordinary admins cannot edit, disable or reset a super user.
+function protectSuper(target: UserDoc, callerRole: string) {
+  if (target.role === 'super' && callerRole !== 'super') fail('permission-denied', 'Only a super user can change a super-user account.');
+}
+
 async function createAuthUser(email: string, name: string, role: UserDoc['role']): Promise<{ uid: string; password: string }> {
   const password = tempPassword();
   const u = await auth.createUser({ email, password, displayName: name, emailVerified: false });
@@ -45,7 +50,8 @@ export const accountSave = onCall(async req => {
   const id = p.str('id');
   const name = p.req('name', 'Name', 120);
   const email = p.req('email', 'Email', 200).toLowerCase();
-  const role = p.oneOf('role', 'Role', ['admin', 'spc'] as const);
+  const role = p.oneOf('role', 'Role', ['admin', 'spc', 'super'] as const);
+  if (role === 'super' && me.role !== 'super') fail('permission-denied', 'Only a super user can create or grant super-user access.');
   await ensureEmailFree(email, id);
 
   if (!id) {
@@ -61,7 +67,8 @@ export const accountSave = onCall(async req => {
   if (!snap.exists) fail('not-found', 'User was not found.');
   const existing = snap.data() as UserDoc;
   if (existing.role === 'driver') fail('invalid-argument', 'Edit drivers from the Drivers page.');
-  if (id === me.uid && role !== 'admin') fail('invalid-argument', 'You cannot remove your own admin role.');
+  protectSuper(existing, me.role);
+  if (id === me.uid && role !== existing.role) fail('invalid-argument', 'You cannot change your own role.');
   await auth.updateUser(id, { email, displayName: name });
   const claims = (await auth.getUser(id)).customClaims ?? {};
   await auth.setCustomUserClaims(id, { ...claims, role });
@@ -81,8 +88,9 @@ export const accountToggle = onCall(async req => {
     const snap = await tx.get(ref);
     if (!snap.exists) fail('not-found', 'User was not found.');
     const u = snap.data() as UserDoc;
-    if (u.status === 'active' && u.role === 'admin') {
-      const admins = await tx.get(db.collection('users').where('role', '==', 'admin').where('status', '==', 'active'));
+    protectSuper(u, me.role);
+    if (u.status === 'active' && (u.role === 'admin' || u.role === 'super')) {
+      const admins = await tx.get(db.collection('users').where('role', 'in', ['admin', 'super']).where('status', '==', 'active'));
       if (admins.size <= 1) fail('failed-precondition', 'At least one active administrator is required.');
     }
     if (u.status === 'active' && u.role === 'driver') {
@@ -105,6 +113,7 @@ export const accountResetPassword = onCall(async req => {
   const snap = await db.doc(`users/${id}`).get();
   if (!snap.exists) fail('not-found', 'User was not found.');
   const u = snap.data() as UserDoc;
+  protectSuper(u, me.role);
   const password = tempPassword();
   await auth.updateUser(id, { password });
   await auth.setCustomUserClaims(id, { ...(await auth.getUser(id)).customClaims, mustChangePassword: true });

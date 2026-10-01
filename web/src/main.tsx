@@ -41,7 +41,7 @@ function App() {
   if (!session) return <Login />;
   if (session.mustChangePassword) return <ForcedPasswordChange />;
   if (session.role === 'driver') return <DriverApp />;
-  if (session.role === 'admin' || session.role === 'spc') return <OfficeApp page={route.page} id={route.id} />;
+  if (session.role === 'admin' || session.role === 'spc' || session.role === 'super') return <OfficeApp page={route.page} id={route.id} />;
   return (
     <div className="mx-auto max-w-sm space-y-3 p-6">
       <Alert>This account has no role yet. Ask the fleet office to set it up.</Alert>

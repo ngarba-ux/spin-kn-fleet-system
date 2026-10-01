@@ -4,7 +4,7 @@
 export interface UserDoc {
   name: string;
   email: string;
-  role: 'admin' | 'spc' | 'driver';
+  role: 'admin' | 'spc' | 'driver' | 'super';
   status: 'active' | 'inactive';
   mustChangePassword: boolean;
   createdTs: string;
@@ -188,6 +188,7 @@ export interface RequestDoc {
   dispatchVehicleId?: string | null;
   taskId?: string | null;
   forwardedByName?: string | null;
+  forwardedByUid?: string | null;
   dispatchedByName?: string | null;
   spcDecision?: string | null;
   rescheduledFromDepart?: string | null;

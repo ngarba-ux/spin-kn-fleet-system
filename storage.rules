@@ -7,7 +7,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     function ready() { return request.auth != null && request.auth.token.mustChangePassword != true; }
     function role() { return request.auth.token.role; }
-    function isOffice() { return ready() && (role() == 'admin' || role() == 'spc'); }
+    function isOffice() { return ready() && role() in ['admin', 'spc', 'super']; }
     function okFile() {
       return request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|webp)|application/pdf');
@@ -21,7 +21,7 @@ service firebase.storage {
 
     match /uploads/office/{file} {
       allow read: if isOffice();
-      allow create: if ready() && role() == 'admin' && okFile();
+      allow create: if ready() && role() in ['admin', 'super'] && okFile();
       allow update, delete: if false;
     }
 

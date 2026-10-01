@@ -59,8 +59,9 @@ export function notifyOffice(tx: Transaction, s: Settings, to: Recipient[], id: 
   }
 }
 
+// Super users hold both office roles, so they get both kinds of email.
 export async function officeRecipients(role: 'admin' | 'spc'): Promise<Recipient[]> {
-  const snap = await db.collection('users').where('role', '==', role).where('status', '==', 'active').get();
+  const snap = await db.collection('users').where('role', 'in', [role, 'super']).where('status', '==', 'active').get();
   return snap.docs.map(d => d.data() as UserDoc).map(u => ({ email: u.email, name: u.name }));
 }
 

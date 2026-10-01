@@ -3,7 +3,8 @@ import { createContext, ReactNode, useContext, useEffect, useState } from 'react
 import { onIdTokenChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 import { auth, call } from './firebase';
 
-export type Role = 'admin' | 'spc' | 'driver';
+// 'super' holds both office roles (admin + SPC).
+export type Role = 'admin' | 'spc' | 'driver' | 'super';
 
 export interface Session {
   user: User;

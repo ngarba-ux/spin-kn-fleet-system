@@ -9,8 +9,9 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function role() { return request.auth.token.role; }
     function ready() { return signedIn() && request.auth.token.mustChangePassword != true; }
-    function isAdmin() { return ready() && role() == 'admin'; }
-    function isOffice() { return ready() && (role() == 'admin' || role() == 'spc'); }
+    // 'super' holds both office roles (admin + SPC).
+    function isAdmin() { return ready() && role() in ['admin', 'super']; }
+    function isOffice() { return ready() && role() in ['admin', 'spc', 'super']; }
     function isDriver() { return ready() && role() == 'driver'; }
     function mine() { return resource.data.driverId == request.auth.uid; }
 
