@@ -6,7 +6,7 @@
   "etags": {
     "spin-kn-fleet": {
       "extensionInstances": {
-        "firestore-send-email": "d1d613b6dd253780bbff2759e4e1fac6dcbdfbf985087b70626d828b5c08852d"
+        "firestore-send-email": "358be828c96d9aca26c1246b071a0495ed2ab68226572e0e5fed0157f23d46b6"
       }
     }
   }
