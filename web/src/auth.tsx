@@ -35,10 +35,13 @@ export function signOutNow() {
 }
 
 // Forced first sign-in change: the function sets the password and clears the
-// claim; refreshing the token picks up the new claims.
+// claim. Changing a password ends the current session, so sign straight back
+// in with the new password; the fresh token carries the updated claims.
 export async function setFirstPassword(password: string) {
+  const email = auth.currentUser?.email;
+  if (!email) throw new Error('Please sign in again.');
   await call('passwordChanged', { password });
-  await auth.currentUser?.getIdToken(true);
+  await signInWithEmailAndPassword(auth, email, password);
 }
 
 export function friendlyAuthError(e: unknown): string {
